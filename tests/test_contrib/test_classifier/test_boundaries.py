@@ -16,13 +16,14 @@ Ensure that the Decision Boundary visualizations work.
 # Imports
 ##########################################################################
 
+import sys
 import six
 import pytest
 import numpy as np
 
 from tests.base import VisualTestCase
 
-from yellowbrick.classifier import *
+from yellowbrick.contrib.classifier import *
 from yellowbrick.exceptions import YellowbrickTypeError
 from yellowbrick.exceptions import YellowbrickValueError
 
@@ -207,7 +208,7 @@ class DecisionBoundariesVisualizerTest(VisualTestCase):
         fitted_viz = viz.fit(X_two_cols, y=y)
         self.assertEquals(fitted_viz.features_, ['one', 'two'])
 
-    @mock.patch("yellowbrick.classifier.boundaries.OrderedDict")
+    @mock.patch("yellowbrick.contrib.classifier.boundaries.OrderedDict")
     def test_draw_ordereddict_calls(self, mock_odict):
         """
         Test draw with calls to ordered dict
@@ -218,7 +219,7 @@ class DecisionBoundariesVisualizerTest(VisualTestCase):
         self.assertRaises(KeyError, viz.fit_draw, X_two_cols, y=y)
         self.assertEquals(len(mock_odict.mock_calls), 2)
 
-    @mock.patch("yellowbrick.classifier.boundaries.resolve_colors")
+    @mock.patch("yellowbrick.contrib.classifier.boundaries.resolve_colors")
     def test_draw_ordereddict_calls_one(self, mock_resolve_colors):
         """
         Test ordered dict calls resolve colors
@@ -319,7 +320,9 @@ class DecisionBoundariesVisualizerTest(VisualTestCase):
         viz.draw.assert_called_once_with(X_two_cols, y)
         viz.poof.assert_called_once_with()
 
-
+    @pytest.mark.xfail(
+        sys.platform == 'win32', reason="images not close on windows"
+    )
     def test_integrated_plot_numpy_named_arrays(self):
         """
         Test integration of visualizer with numpy named arrays
@@ -357,6 +360,9 @@ class DecisionBoundariesVisualizerTest(VisualTestCase):
         visualizer.fit_draw_poof(X, y)
         self.assertEquals(visualizer.features_, [1, 2])
 
+    @pytest.mark.xfail(
+        sys.platform == 'win32', reason="images not close on windows"
+    )
     @pytest.mark.skipif(pd is None, reason="test requires pandas")
     def test_real_data_set_viz(self):
         """

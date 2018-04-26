@@ -1,6 +1,7 @@
 # Yellowbrick
 
 [![Build Status](https://travis-ci.org/DistrictDataLabs/yellowbrick.svg?branch=master)](https://travis-ci.org/DistrictDataLabs/yellowbrick)
+[![Build status](https://ci.appveyor.com/api/projects/status/11abg00ollbdf4oy?svg=true)](https://ci.appveyor.com/project/districtdatalabs/yellowbrick)
 [![Coverage Status](https://coveralls.io/repos/github/DistrictDataLabs/yellowbrick/badge.svg?branch=master)](https://coveralls.io/github/DistrictDataLabs/yellowbrick?branch=master)
 [![Code Health](https://landscape.io/github/DistrictDataLabs/yellowbrick/master/landscape.svg?style=flat)](https://landscape.io/github/DistrictDataLabs/yellowbrick/master)
 [![PyPI version](https://badge.fury.io/py/yellowbrick.svg)](https://badge.fury.io/py/yellowbrick)
@@ -27,11 +28,12 @@ Visualizers are estimators (objects that learn from data) whose primary objectiv
 
 #### Feature Visualization
 
-- **Feature Importances**: rank features based on their in-model performance
 - **Parallel Coordinates**: horizontal visualization of instances
 - **PCA Projection**: projection of instances based on principal components
 - **RadViz**: separation of instances around a circular plot
 - **Rank Features**: single or pairwise ranking of features to detect relationships
+- **Feature Importances**: rank features based on their in-model performance
+- **Recursive Feature Elimination**: find the best subset of features by importance
 - **Scatter and Joint Plots**: direct data visualization with feature selection
 
 #### Classification Visualization
@@ -53,6 +55,11 @@ Visualizers are estimators (objects that learn from data) whose primary objectiv
 
 - **K-Elbow Plot**: select k using the elbow method and various metrics
 - **Silhouette Plot**: select k by visualizing silhouette coefficient values
+
+#### Model Selection Visualization
+
+-  **Validation Curve**: tune a model with respect to a single hyperparameter
+-  **Learning Curve**: show if a model might benefit from more data or less complexity
 
 #### Text Visualization
 

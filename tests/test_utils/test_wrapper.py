@@ -4,7 +4,7 @@
 # Author:   Benjamin Bengfort <bbengfort@districtdatalabs.com>
 # Created:  Mon May 22 09:25:52 2017 -0700
 #
-# Copyright (C) 2017 District Data Labs
+# Copyright (C) 2017 The scikit-yb developers
 # For license information, see LICENSE.txt
 #
 # ID: test_wrapper.py [b2ecd50] benjamin@bengfort.com $
@@ -17,28 +17,28 @@ Testing for the wrapping utility.
 ## Imports
 ##########################################################################
 
+import pytest
+
+from unittest import mock
+
 from yellowbrick.base import Visualizer
 from yellowbrick.utils.wrapper import *
+from yellowbrick.exceptions import YellowbrickAttributeError, YellowbrickTypeError
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.naive_bayes import GaussianNB
-
-try:
-    from unittest import mock
-except ImportError:
-    import mock
 
 
 ##########################################################################
 ## Fixture
 ##########################################################################
 
-class MockVisualizer(Visualizer):
 
+class MockVisualizer(Visualizer):
     def __init__(self, ax=None, **kwargs):
         self.ax = ax
         self.fit = mock.MagicMock()
         self.finalize = mock.MagicMock()
-        self.poof = mock.MagicMock()
+        self.show = mock.MagicMock()
         self.set_title = mock.MagicMock()
 
     @property
@@ -51,7 +51,6 @@ class MockVisualizer(Visualizer):
 
 
 class WrappedEstimator(MockVisualizer, Wrapper):
-
     def __init__(self, **kwargs):
         self.estimator = mock.MagicMock(spec=MultinomialNB())
 
@@ -62,12 +61,13 @@ class WrappedEstimator(MockVisualizer, Wrapper):
         return True
 
     def foo(self, a, b):
-        return a+b
+        return a + b
 
 
 ##########################################################################
 ## Wrapper Test Case
 ##########################################################################
+
 
 class TestWrapper(object):
     """
@@ -82,7 +82,7 @@ class TestWrapper(object):
 
         # Assert that all the wrapper methods are called
         assert obj.draw()
-        assert obj.foo(2,2) == 4
+        assert obj.foo(2, 2) == 4
         assert obj.estimator is not None
 
     def test_super_methods(self):
@@ -95,13 +95,13 @@ class TestWrapper(object):
         # Assert that visualizer methods are called
         obj.fit()
         obj.finalize()
-        obj.poof()
+        obj.show()
         obj.set_title()
 
         assert obj.ax is None
         obj.fit.assert_called_once_with()
         obj.finalize.assert_called_once_with()
-        obj.poof.assert_called_once_with()
+        obj.show.assert_called_once_with()
         obj.set_title.assert_called_once_with()
 
     def test_wrapped_methods(self):
@@ -136,3 +136,21 @@ class TestWrapper(object):
         obj.predict()
         old.predict.assert_called_once()
         new.predict.assert_called_once()
+
+    def test_wrapper_recursion(self):
+        """
+        Ensure wrapper recursion isn't possible
+        """
+        obj = Wrapper("")
+        obj._wrapped = obj
+        with pytest.raises(YellowbrickTypeError):
+            obj.foo
+
+    def test_attribute_error(self):
+        """
+        Attribute errors should return a YellowbrickAttributeError
+        """
+        obj = WrappedEstimator()
+        pat = r"neither visualizer 'WrappedEstimator' nor wrapped estimator 'MagicMock' have attribute 'notaproperty'"
+        with pytest.raises(YellowbrickAttributeError, match=pat):
+            obj.notaproperty

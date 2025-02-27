@@ -3,54 +3,111 @@
 PCA Projection
 ==============
 
-The PCA Decomposition visualizer utilizes principle component analysis to decompose high dimensional data into two or three dimensions so that each instance can be plotted in a scatter plot. The use of PCA means that the projected dataset can be analyzed along axes of principle variation and can be interpreted to determine if spherical distance metrics can be utilized.
+The PCA Decomposition visualizer utilizes principal component analysis to decompose high dimensional data into two or three dimensions so that each instance can be plotted in a scatter plot. The use of PCA means that the projected dataset can be analyzed along axes of principal variation and can be interpreted to determine if spherical distance metrics can be utilized.
 
-.. code:: python
+=================   =================
+Visualizer           :class:`~yellowbrick.features.pca.PCA`
+Quick Method         :func:`~yellowbrick.features.pca.pca_decomposition`
+Models               Classification/Regression
+Workflow             Feature Engineering/Selection
+=================   =================
 
-    # Load the classification data set
-    data = load_data('credit')
+.. plot::
+    :context: close-figs
+    :alt: PCA Projection, 2D
 
-    # Specify the features of interest
-    features = [
-        'limit', 'sex', 'edu', 'married', 'age', 'apr_delay', 'may_delay',
-        'jun_delay', 'jul_delay', 'aug_delay', 'sep_delay', 'apr_bill', 'may_bill',
-        'jun_bill', 'jul_bill', 'aug_bill', 'sep_bill', 'apr_pay', 'may_pay', 'jun_pay',
-        'jul_pay', 'aug_pay', 'sep_pay',
-    ]
+    from yellowbrick.datasets import load_credit
+    from yellowbrick.features import PCA
 
-    # Extract the numpy arrays from the data frame
-    X = data[features].as_matrix()
-    y = data.default.as_matrix()
+    # Specify the features of interest and the target
+    X, y = load_credit()
+    classes = ['account in default', 'current with bills']
 
-.. code:: python
-
-    from yellowbrick.features.pca import PCADecomposition
-    
-    visualizer = PCADecomposition(scale=True, center=False, color=y)
-    visualizer.fit_transform(X,y)
-    visualizer.poof()
+    visualizer = PCA(scale=True, classes=classes)
+    visualizer.fit_transform(X, y)
+    visualizer.show()
 
 
-.. image:: images/pca_projection_2d.png
+The PCA projection can also be plotted in three dimensions to attempt to visualize more principal components and get a better sense of the distribution in high dimensions.
 
-The PCA projection can also be plotted in three dimensions to attempt to visualize more princple components and get a better sense of the distribution in high dimensions.
+.. plot::
+    :context: close-figs
+    :alt: PCA Projection, 3D
 
-.. code:: python
+    from yellowbrick.datasets import load_credit
+    from yellowbrick.features import PCA
 
-    visualizer = PCADecomposition(
-        scale=True, center=False, color=y, proj_dim=3
+    X, y = load_credit()
+    classes = ['account in default', 'current with bills']
+
+    visualizer = PCA(
+        scale=True, projection=3, classes=classes
     )
-    visualizer.fit_transform(X,y)
-    visualizer.poof()
+    visualizer.fit_transform(X, y)
+    visualizer.show()
 
 
-.. image:: images/pca_projection_3d.png
+Biplot
+------
+
+The PCA projection can be enhanced to a biplot whose points are the projected instances and whose vectors represent the structure of the data in high dimensional space. By using ``proj_features=True``, vectors for each feature in the dataset are drawn on the scatter plot in the direction of the maximum variance for that feature. These structures can be used to analyze the importance of a feature to the decomposition or to find features of related variance for further analysis.
+
+.. plot::
+    :context: close-figs
+    :alt: PCA biplot projection, 2D
+
+    from yellowbrick.datasets import load_concrete
+    from yellowbrick.features import PCA
+
+    # Load the concrete dataset
+    X, y = load_concrete()
+
+    visualizer = PCA(scale=True, proj_features=True)
+    visualizer.fit_transform(X, y)
+    visualizer.show()
+
+
+.. plot::
+    :context: close-figs
+    :alt: PCA biplot projection, 3D
+
+    from yellowbrick.datasets import load_concrete
+    from yellowbrick.features import PCA
+
+    X, y = load_concrete()
+
+    visualizer = PCA(scale=True, proj_features=True, projection=3)
+    visualizer.fit_transform(X, y)
+    visualizer.show()
+
+Quick Method
+------------
+
+The same functionality above can be achieved with the associated quick method ``pca_decomposition``. This method
+will build the ``PCA`` object with the associated arguments, fit it, then (optionally) immediately
+show it.
+
+.. plot::
+    :context: close-figs
+    :alt: pca_decomposition on the credit dataset
+
+    from yellowbrick.datasets import load_credit
+    from yellowbrick.features import pca_decomposition
+
+    # Specify the features of interest and the target
+    X, y = load_credit()
+    classes = ['account in default', 'current with bills']
+
+    # Create, fit, and show the visualizer
+    pca_decomposition(
+        X, y, scale=True, classes=classes
+    )
 
 
 API Reference
 -------------
 
 .. automodule:: yellowbrick.features.pca
-    :members: PCADecomposition
+    :members: PCA, pca_decomposition
     :undoc-members:
     :show-inheritance:

@@ -1,11 +1,11 @@
 # tests.test_classifier.test_threshold
 # Ensure that the discrimination threshold visualizations work.
 #
-# Author:  Nathan Danielsen <ndanielsen@gmail.com>
-# Author:  Benjamin Bengfort <bbengfort@districtdatalabs.com>
+# Author:  Nathan Danielsen
+# Author:  Benjamin Bengfort
 # Created: Wed April 26 20:17:29 2017 -0700
 #
-# Copyright (C) 2017 District Data Labs
+# Copyright (C) 2017 The scikit-yb developers
 # For license information, see LICENSE.txt
 #
 # ID: test_threshold.py [] nathan.danielsen@gmail.com $
@@ -19,22 +19,24 @@ Ensure that the DiscriminationThreshold visualizations work.
 ##########################################################################
 
 import sys
-import six
 import pytest
 import yellowbrick as yb
 import matplotlib.pyplot as plt
 
 from yellowbrick.classifier.threshold import *
+from yellowbrick.datasets import load_occupancy, load_spam
 from yellowbrick.utils import is_probabilistic, is_classifier
 
+from unittest.mock import patch
 from tests.base import VisualTestCase
-from tests.dataset import DatasetMixin
-from numpy.testing.utils import assert_array_equal
+from numpy.testing import assert_array_equal
 
+from sklearn.base import ClassifierMixin
 from sklearn.svm import LinearSVC, NuSVC
+from sklearn.impute import SimpleImputer
+from sklearn.pipeline import Pipeline
 from sklearn.datasets import make_classification
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.neighbors import RadiusNeighborsClassifier
 from sklearn.naive_bayes import BernoulliNB, GaussianNB
 from sklearn.linear_model import Ridge, LogisticRegression
 from sklearn.model_selection import StratifiedShuffleSplit
@@ -44,52 +46,38 @@ try:
 except ImportError:
     pd = None
 
-try:
-    from unittest.mock import patch
-except ImportError:
-    from mock import patch
-
-
 ##########################################################################
 ## DiscriminationThreshold Test Cases
 ##########################################################################
 
-class TestDiscriminationThreshold(VisualTestCase, DatasetMixin):
+
+class TestDiscriminationThreshold(VisualTestCase):
     """
     DiscriminationThreshold visualizer tests
     """
 
-    def test_deprecated_aliases(self):
-        """
-        Assert aliases are deprecated
-        """
-        # TODO: Remove in v0.8
-        if yb.__version_info__["minor"] >= 8:
-            pytest.fail("alias deprecation should be removed in v0.8")
-
-        for alias in (ThresholdVisualizer, ThreshViz):
-            with pytest.deprecated_call():
-                alias(BernoulliNB())
-
-    @pytest.mark.xfail(
-        sys.platform == 'win32', reason="images not close on windows"
-    )
+    @pytest.mark.xfail(sys.platform == "win32", reason="images not close on windows")
     def test_binary_discrimination_threshold(self):
         """
         Correctly generates viz for binary classification with BernoulliNB
         """
         X, y = make_classification(
-            n_samples=400, n_features=20, n_informative=8, n_redundant=8,
-            n_classes=2, n_clusters_per_class=4, random_state=854
+            n_samples=400,
+            n_features=20,
+            n_informative=8,
+            n_redundant=8,
+            n_classes=2,
+            n_clusters_per_class=4,
+            random_state=854,
         )
 
         _, ax = plt.subplots()
 
-        model = BernoulliNB(3)
+        model = BernoulliNB()
         visualizer = DiscriminationThreshold(model, ax=ax, random_state=23)
 
         visualizer.fit(X, y)
-        visualizer.poof()
+        visualizer.finalize()
 
         self.assert_images_similar(visualizer)
 
@@ -98,8 +86,13 @@ class TestDiscriminationThreshold(VisualTestCase, DatasetMixin):
         Assert exception is raised in multiclass case.
         """
         X, y = make_classification(
-            n_samples=400, n_features=20, n_informative=8, n_redundant=8,
-            n_classes=3, n_clusters_per_class=4, random_state=854
+            n_samples=400,
+            n_features=20,
+            n_informative=8,
+            n_redundant=8,
+            n_classes=3,
+            n_clusters_per_class=4,
+            random_state=854,
         )
 
         visualizer = DiscriminationThreshold(GaussianNB(), random_state=23)
@@ -108,9 +101,7 @@ class TestDiscriminationThreshold(VisualTestCase, DatasetMixin):
         with pytest.raises(ValueError, match=msg):
             visualizer.fit(X, y)
 
-    @pytest.mark.xfail(
-        sys.platform == 'win32', reason="images not close on windows"
-    )
+    @pytest.mark.xfail(sys.platform == "win32", reason="images not close on windows")
     @pytest.mark.skipif(pd is None, reason="test requires pandas")
     def test_pandas_integration(self):
         """
@@ -119,24 +110,39 @@ class TestDiscriminationThreshold(VisualTestCase, DatasetMixin):
         _, ax = plt.subplots()
 
         # Load the occupancy dataset from fixtures
-        data = self.load_data('occupancy')
-        target = 'occupancy'
-        features = [
-            "temperature", "relative_humidity", "light", "C02", "humidity"
-        ]
+        data = load_occupancy(return_dataset=True)
+        X, y = data.to_pandas()
 
-        # Create instances and target
-        X = pd.DataFrame(data[features])
-        y = pd.Series(data[target].astype(int))
-
-        classes = ['unoccupied', 'occupied']
+        classes = ["unoccupied", "occupied"]
 
         # Create the visualizer
         viz = DiscriminationThreshold(
             LogisticRegression(), ax=ax, classes=classes, random_state=193
         )
         viz.fit(X, y)
-        viz.poof()
+        viz.finalize()
+
+        self.assert_images_similar(viz, tol=0.1)
+
+    @pytest.mark.xfail(sys.platform == "win32", reason="images not close on windows")
+    def test_numpy_integration(self):
+        """
+        Test with NumPy arrays
+        """
+        _, ax = plt.subplots()
+
+        # Load the occupancy dataset from fixtures
+        data = load_occupancy(return_dataset=True)
+        X, y = data.to_numpy()
+
+        classes = ["unoccupied", "occupied"]
+
+        # Create the visualizer
+        viz = DiscriminationThreshold(
+            LogisticRegression(), ax=ax, classes=classes, random_state=193
+        )
+        viz.fit(X, y)
+        viz.finalize()
 
         self.assert_images_similar(viz, tol=0.1)
 
@@ -146,23 +152,33 @@ class TestDiscriminationThreshold(VisualTestCase, DatasetMixin):
         """
 
         X, y = make_classification(
-            n_samples=400, n_features=20, n_informative=8, n_redundant=8,
-            n_classes=2, n_clusters_per_class=4, random_state=2721
+            n_samples=400,
+            n_features=20,
+            n_informative=8,
+            n_redundant=8,
+            n_classes=2,
+            n_clusters_per_class=4,
+            random_state=2721,
         )
 
         _, ax = plt.subplots()
 
-        discrimination_threshold(BernoulliNB(3), X, y, ax=ax, random_state=5)
+        discrimination_threshold(BernoulliNB(), X, y, ax=ax, random_state=5, show=False)
         self.assert_images_similar(ax=ax, tol=10)
 
-    @patch.object(DiscriminationThreshold, 'draw', autospec=True)
+    @patch.object(DiscriminationThreshold, "draw", autospec=True)
     def test_fit(self, mock_draw):
         """
         Test the fit method generates scores, calls draw, and returns self
         """
         X, y = make_classification(
-            n_samples=400, n_features=20, n_informative=8, n_redundant=8,
-            n_classes=2, n_clusters_per_class=4, random_state=1221
+            n_samples=400,
+            n_features=20,
+            n_informative=8,
+            n_redundant=8,
+            n_classes=2,
+            n_clusters_per_class=4,
+            random_state=1221,
         )
 
         visualizer = DiscriminationThreshold(BernoulliNB())
@@ -172,8 +188,7 @@ class TestDiscriminationThreshold(VisualTestCase, DatasetMixin):
         out = visualizer.fit(X, y)
 
         assert out is visualizer
-        if six.PY3:
-            mock_draw.assert_called_once()
+        mock_draw.assert_called_once()
         assert hasattr(visualizer, "thresholds_")
         assert hasattr(visualizer, "cv_scores_")
 
@@ -182,17 +197,21 @@ class TestDiscriminationThreshold(VisualTestCase, DatasetMixin):
             assert "{}_lower".format(metric) in visualizer.cv_scores_
             assert "{}_upper".format(metric) in visualizer.cv_scores_
 
-    @pytest.mark.xfail(
-        sys.platform == 'win32', reason="images not close on windows"
-    )
+    @pytest.mark.xfail(sys.platform == "win32", reason="images not close on windows")
     def test_binary_discrimination_threshold_alt_args(self):
         """
         Correctly generates visualization with alternate arguments
         """
         X, y = make_classification(
-            n_samples=400, n_features=20, n_informative=10, n_redundant=3,
-            n_classes=2, n_clusters_per_class=4, random_state=1231,
-            flip_y=0.1, weights=[0.35, 0.65],
+            n_samples=400,
+            n_features=20,
+            n_informative=10,
+            n_redundant=3,
+            n_classes=2,
+            n_clusters_per_class=4,
+            random_state=1231,
+            flip_y=0.1,
+            weights=[0.35, 0.65],
         )
 
         exclude = ["queue_rate", "fscore"]
@@ -202,7 +221,7 @@ class TestDiscriminationThreshold(VisualTestCase, DatasetMixin):
         )
 
         visualizer.fit(X, y)
-        visualizer.poof()
+        visualizer.finalize()
 
         for metric in exclude:
             assert metric not in visualizer.cv_scores_
@@ -215,7 +234,7 @@ class TestDiscriminationThreshold(VisualTestCase, DatasetMixin):
         """
         Test initialization default parameters
         """
-        model = BernoulliNB(3)
+        model = BernoulliNB()
         viz = DiscriminationThreshold(model)
         assert viz.estimator is model
         assert viz.color is None
@@ -239,11 +258,21 @@ class TestDiscriminationThreshold(VisualTestCase, DatasetMixin):
         Assert requires probabilistic classifier
         """
         message = "requires a probabilistic binary classifier"
-        assert is_classifier(RadiusNeighborsClassifier)
-        assert not is_probabilistic(RadiusNeighborsClassifier)
+
+        class RoboClassifier(ClassifierMixin):
+            """
+            Dummy Non-Probabilistic Classifier
+            """
+
+            def fit(self, X, y):
+                self.classes_ = [0, 1]
+                return self
+
+        assert is_classifier(RoboClassifier)
+        assert not is_probabilistic(RoboClassifier)
 
         with pytest.raises(yb.exceptions.YellowbrickError, match=message):
-            DiscriminationThreshold(RadiusNeighborsClassifier())
+            DiscriminationThreshold(RoboClassifier())
 
     def test_accepts_predict_proba(self):
         """
@@ -307,7 +336,7 @@ class TestDiscriminationThreshold(VisualTestCase, DatasetMixin):
         assert viz._check_cv(splits, random_state=23).random_state == 23
 
         splits = StratifiedShuffleSplit(n_splits=1, random_state=181)
-        assert viz._check_cv(splits, random_state=None).random_state is 181
+        assert viz._check_cv(splits, random_state=None).random_state == 181
         assert viz._check_cv(splits, random_state=72).random_state == 72
 
     def test_bad_exclude(self):
@@ -319,3 +348,87 @@ class TestDiscriminationThreshold(VisualTestCase, DatasetMixin):
 
         with pytest.raises(YellowbrickValueError, match="not a valid metric"):
             DiscriminationThreshold(NuSVC(), exclude=["queue_rate", "foo"])
+
+    def test_bad_argmax(self):
+        """
+        Assert an exception is raised on bad argmax param
+        """
+        with pytest.raises(YellowbrickValueError, match="not a valid metric"):
+            DiscriminationThreshold(NuSVC(), argmax="foo")
+
+    @pytest.mark.parametrize(
+        "viz_kwargs",
+        [
+            {"argmax": None},
+            {"exclude": "fscore"},
+            {"argmax": "queue_rate", "exclude": "queue_rate"},
+        ],
+    )
+    def test_none_argmax(self, viz_kwargs):
+        """
+        Assert argmax param works fine
+        """
+        viz = DiscriminationThreshold(NuSVC(), **viz_kwargs)
+        assert viz._check_argmax(viz.argmax, viz.exclude) is None
+
+    def test_within_pipeline(self):
+        """
+        Test that visualizer can be accessed within a sklearn pipeline
+        """
+        X, y = load_spam()
+
+        model = Pipeline([
+            ('imputer', SimpleImputer(missing_values=np.nan, strategy='mean')),
+            ('dt', DiscriminationThreshold(LogisticRegression(multi_class="auto", solver="liblinear"), random_state=42))
+        ])
+
+        model.fit(X, y)
+        model['dt'].finalize()
+        self.assert_images_similar(model['dt'], tol=15)
+
+    def test_within_pipeline_quickmethod(self):
+        """
+        Test that visualizer quickmethod can be accessed within a
+        sklearn pipeline
+        """
+        X, y = load_spam()
+
+        model = Pipeline([
+            ('imputer', SimpleImputer(missing_values=np.nan, strategy='mean')),
+            ('dt',
+             discrimination_threshold(LogisticRegression(multi_class="auto", solver="liblinear"), X,
+                                      y, random_state=42))
+        ])
+        model['dt'].finalize()
+        self.assert_images_similar(model['dt'], tol=15)
+
+    def test_pipeline_as_model_input(self):
+        """
+        Test that visualizer can handle sklearn pipeline as model input
+        """
+        X, y = load_spam()
+
+        model = Pipeline([
+            ('imputer', SimpleImputer(missing_values=np.nan, strategy='mean')),
+            ('lr', LogisticRegression(multi_class="auto", solver="liblinear"))
+        ])
+
+        oz = DiscriminationThreshold(model, random_state=42)
+        oz.fit(X, y)
+        oz.finalize()
+        self.assert_images_similar(oz, tol=15)
+
+    def test_pipeline_as_model_input_quickmethod(self):
+        """
+        Test that visualizer can handle sklearn pipeline as model input
+        within a quickmethod
+        """
+        X, y = load_spam()
+
+        model = Pipeline([
+            ('imputer', SimpleImputer(missing_values=np.nan, strategy='mean')),
+            ('lr', LogisticRegression(multi_class="auto", solver="liblinear"))
+        ])
+
+        oz = discrimination_threshold(model, X, y, random_state=42)
+        self.assert_images_similar(oz, tol=15)

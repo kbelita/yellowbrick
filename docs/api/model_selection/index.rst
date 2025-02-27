@@ -9,8 +9,12 @@ The ``yellowbrick.model_selection`` package provides visualizers for inspecting 
 
 The currently implemented model selection visualizers are as follows:
 
--  :doc:`validation_curve`: visualizes how the adjustment of a hyperparameter influences training and test scores to tune the bias/variance trade-off. 
+-  :doc:`validation_curve`: visualizes how the adjustment of a hyperparameter influences training and test scores to tune the bias/variance trade-off.
 -  :doc:`learning_curve`: shows how the size of training data influences the model to diagnose if a model suffers more from variance error vs. bias error.
+-  :doc:`cross_validation`: displays cross-validated scores as a bar chart with average as a horizontal line.
+-  :doc:`importances`: rank features by relative importance in a model
+-  :doc:`rfecv`: select a subset of features by importance
+-  :doc:`dropping_curve`: select subsets of features randomly
 
 Model selection makes heavy use of cross validation to measure the performance of an estimator. Cross validation splits a dataset into a training data set and a test data set; the model is fit on the training data and evaluated on the test data. This helps avoid a common pitfall, overfitting, where the model simply memorizes the training data and does not generalize well to new or unknown input.
 
@@ -21,3 +25,7 @@ There are many ways to define how to split a dataset for cross validation. For m
 
    validation_curve
    learning_curve
+   cross_validation
+   importances
+   rfecv
+   dropping_curve

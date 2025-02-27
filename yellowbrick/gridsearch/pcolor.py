@@ -1,3 +1,14 @@
+# yellowbrick.gridsearch.pcolor
+# Colorplot visualizer for gridsearch results.
+#
+# Author:   Phillip Schafer
+# Created:  Sat Feb 3 10:18:33 2018 -0500
+#
+# Copyright (C) 2018 The scikit-yb developers
+# For license information, see LICENSE.txt
+#
+# ID: pcolor.py [03724ed] pbs929@users.noreply.github.com $
+
 """
 Colorplot visualizer for gridsearch results.
 """
@@ -8,18 +19,15 @@ from .base import GridSearchVisualizer
 
 
 ## Packages for export
-__all__ = [
-    "GridSearchColorPlot",
-    "gridsearch_color_plot"
-]
+__all__ = ["GridSearchColorPlot", "gridsearch_color_plot"]
 
 
 ##########################################################################
 ## Quick method
 ##########################################################################
 
-def gridsearch_color_plot(model, x_param, y_param, X=None, y=None, ax=None,
-                          **kwargs):
+
+def gridsearch_color_plot(estimator, x_param, y_param, X=None, y=None, ax=None, **kwargs):
     """Quick method:
     Create a color plot showing the best grid search scores across two
     parameters.
@@ -32,7 +40,7 @@ def gridsearch_color_plot(model, x_param, y_param, X=None, y=None, ax=None,
 
     Parameters
     ----------
-    model : Scikit-Learn grid search object
+    estimator : Scikit-Learn grid search object
         Should be an instance of GridSearchCV. If not, an exception is raised.
         The model may be fit or unfit.
 
@@ -64,7 +72,7 @@ def gridsearch_color_plot(model, x_param, y_param, X=None, y=None, ax=None,
         Returns the axes that the classification report was drawn on.
     """
     # Instantiate the visualizer
-    visualizer = GridSearchColorPlot(model, x_param, y_param, ax=ax, **kwargs)
+    visualizer = GridSearchColorPlot(estimator, x_param, y_param, ax=ax, **kwargs)
 
     # Fit if necessary
     if X is not None:
@@ -83,7 +91,7 @@ class GridSearchColorPlot(GridSearchVisualizer):
 
     Parameters
     ----------
-    model : Scikit-Learn grid search object
+    estimator : Scikit-Learn grid search object
         Should be an instance of GridSearchCV. If not, an exception is raised.
 
     x_param : string
@@ -117,12 +125,20 @@ class GridSearchColorPlot(GridSearchVisualizer):
                                   {'kernel': ['rbf', 'linear'], 'C': [1, 10]})
     >>> model = GridSearchColorPlot(gridsearch, x_param='kernel', y_param='C')
     >>> model.fit(X)
-    >>> model.poof()
+    >>> model.show()
     """
 
-    def __init__(self, model, x_param, y_param, metric='mean_test_score',
-                 colormap='RdBu_r', ax=None, **kwargs):
-        super(GridSearchColorPlot, self).__init__(model, ax=ax, **kwargs)
+    def __init__(
+        self,
+        estimator,
+        x_param,
+        y_param,
+        metric="mean_test_score",
+        colormap="RdBu_r",
+        ax=None,
+        **kwargs
+    ):
+        super(GridSearchColorPlot, self).__init__(estimator, ax=ax, **kwargs)
         self.x_param = x_param
         self.y_param = y_param
         self.metric = metric
@@ -138,9 +154,10 @@ class GridSearchColorPlot(GridSearchVisualizer):
         data = np.ma.masked_invalid(best_scores)
 
         # Plot and fill in hatch for nans
-        mesh = self.ax.pcolor(data, cmap=self.colormap,
-                              vmin=np.nanmin(data), vmax=np.nanmax(data))
-        self.ax.patch.set(hatch='x', edgecolor='black')
+        mesh = self.ax.pcolor(
+            data, cmap=self.colormap, vmin=np.nanmin(data), vmax=np.nanmax(data)
+        )
+        self.ax.patch.set(hatch="x", edgecolor="black")
 
         # Ticks and tick labels
         self.ax.set_xticks(np.arange(len(x_vals)) + 0.5)

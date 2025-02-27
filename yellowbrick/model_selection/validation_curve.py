@@ -1,17 +1,20 @@
 # yellowbrick.model_selection.validation_curve
 # Implements a visual validation curve for a hyperparameter.
 #
-# Author:  Benjamin Bengfort <benjamin@bengfort.com>
+# Author:  Benjamin Bengfort
 # Created: Sat Mar 31 06:27:28 2018 -0400
 #
-# ID: validation_curve.py [] benjamin@bengfort.com $
+# Copyright (C) 2018 The scikit-yb developers
+# For license information, see LICENSE.txt
+#
+# ID: validation_curve.py [c5355ee] benjamin@bengfort.com $
 
 """
 Implements a visual validation curve for a hyperparameter.
 """
 
 ##########################################################################
-## Imports
+# Imports
 ##########################################################################
 
 import numpy as np
@@ -24,8 +27,9 @@ from sklearn.model_selection import validation_curve as sk_validation_curve
 
 
 ##########################################################################
-## ValidationCurve visualizer
+# ValidationCurve visualizer
 ##########################################################################
+
 
 class ValidationCurve(ModelVisualizer):
     """
@@ -50,7 +54,7 @@ class ValidationCurve(ModelVisualizer):
 
     Parameters
     ----------
-    model : a scikit-learn estimator
+    estimator : a scikit-learn estimator
         An object that implements ``fit`` and ``predict``, can be a
         classifier, regressor, or clusterer so long as there is also a valid
         associated scoring metric.
@@ -83,7 +87,7 @@ class ValidationCurve(ModelVisualizer):
           - An iterable yielding train/test splits.
 
         see the scikit-learn
-        `cross-validation guide <http://scikit-learn.org/stable/modules/cross_validation.html>`_
+        `cross-validation guide <https://bit.ly/2MMQAI7>`_
         for more information on the possible strategies that can be used here.
 
     scoring : string, callable or None, optional, default: None
@@ -98,6 +102,10 @@ class ValidationCurve(ModelVisualizer):
         Number of predispatched jobs for parallel execution (default is
         all). The option can reduce the allocated memory. The string can
         be an expression like '2*n_jobs'.
+
+    markers : string, default: '-d'
+        Matplotlib style markers for points on the plot points
+        Options: '-,', '-+', '-o', '-*', '-v', '-h', '-d'
 
     kwargs : dict
         Keyword arguments that are passed to the base class and may influence
@@ -132,26 +140,38 @@ class ValidationCurve(ModelVisualizer):
     >>> pr = np.logspace(-6,-1,5)
     >>> model = ValidationCurve(SVC(), param_name="gamma", param_range=pr)
     >>> model.fit(X, y)
-    >>> model.poof()
+    >>> model.show()
 
     Notes
     -----
     This visualizer is essentially a wrapper for the
-    ``sklearn.model_selection.validation_curve utility``, discussed in the
-    `validation curves <http://scikit-learn.org/stable/modules/learning_curve.html#validation-curve>`_
+    ``sklearn.model_selection.learning_curve utility``, discussed in the
+    `validation curves <https://bit.ly/2KlumeB>`__
     documentation.
 
     .. seealso:: The documentation for the
-        `validation_curve <http://scikit-learn.org/stable/modules/generated/sklearn.model_selection.validation_curve.html#sklearn.model_selection.validation_curve>`_
+        `learning_curve <https://bit.ly/2Yz9sBB>`__
         function, which this visualizer wraps.
     """
 
-    def __init__(self, model, param_name, param_range, ax=None, logx=False,
-                 groups=None, cv=None, scoring=None, n_jobs=1,
-                 pre_dispatch="all", **kwargs):
+    def __init__(
+        self,
+        estimator,
+        param_name,
+        param_range,
+        ax=None,
+        logx=False,
+        groups=None,
+        cv=None,
+        scoring=None,
+        n_jobs=1,
+        pre_dispatch="all",
+        markers='-d',
+        **kwargs
+    ):
 
         # Initialize the model visualizer
-        super(ValidationCurve, self).__init__(model, ax=ax, **kwargs)
+        super(ValidationCurve, self).__init__(estimator, ax=ax, **kwargs)
 
         # Validate the param_range
         param_range = np.asarray(param_range)
@@ -159,15 +179,19 @@ class ValidationCurve(ModelVisualizer):
             raise YellowbrickValueError(
                 "must specify array of param values, '{}' is not valid".format(
                     repr(param_range)
-            ))
+                )
+            )
 
         # Set the visual and validation curve parameters on the estimator
-        self.set_params(
-            param_name=param_name, param_range=param_range, logx=logx,
-            groups=groups, cv=cv, scoring=scoring, n_jobs=n_jobs,
-            pre_dispatch=pre_dispatch,
-        )
-
+        self.param_name = param_name
+        self.param_range = param_range
+        self.logx = logx
+        self.groups = groups
+        self.cv = cv
+        self.scoring = scoring
+        self.n_jobs = n_jobs
+        self.pre_dispatch = pre_dispatch
+        self.markers = markers
 
     def fit(self, X, y=None):
         """
@@ -195,8 +219,13 @@ class ValidationCurve(ModelVisualizer):
         skvc_kwargs = {
             key: self.get_params()[key]
             for key in (
-                'param_name', 'param_range', 'groups', 'cv', 'scoring',
-                'n_jobs', 'pre_dispatch',
+                "param_name",
+                "param_range",
+                "groups",
+                "cv",
+                "scoring",
+                "n_jobs",
+                "pre_dispatch",
             )
         }
 
@@ -234,19 +263,17 @@ class ValidationCurve(ModelVisualizer):
         for idx, (mean, std) in enumerate(curves):
             # Plot one standard deviation above and below the mean
             self.ax.fill_between(
-                self.param_range, mean - std, mean+std, alpha=0.25,
-                color=colors[idx],
+                self.param_range, mean - std, mean + std, alpha=0.25, color=colors[idx]
             )
 
         # Plot the mean curves so they are in front of the variance fill
         for idx, (mean, _) in enumerate(curves):
             self.ax.plot(
-                self.param_range, mean, 'd-', color=colors[idx],
-                label=labels[idx],
+                self.param_range, mean, self.markers, color=colors[idx], label=labels[idx]
             )
 
         if self.logx:
-            self.ax.set_xscale('log')
+            self.ax.set_xscale("log")
 
         return self.ax
 
@@ -255,23 +282,38 @@ class ValidationCurve(ModelVisualizer):
         Add the title, legend, and other visual final touches to the plot.
         """
         # Set the title of the figure
-        self.set_title('Validation Curve for {}'.format(self.name))
+        self.set_title("Validation Curve for {}".format(self.name))
 
         # Add the legend
-        self.ax.legend(frameon=True, loc='best')
+        self.ax.legend(frameon=True, loc="best")
 
         # Set the axis labels
         self.ax.set_xlabel(self.param_name)
-        self.ax.set_ylabel('score')
+        self.ax.set_ylabel("score")
 
 
 ##########################################################################
-## Quick Method
+# Quick Method
 ##########################################################################
 
-def validation_curve(model, X, y, param_name, param_range, ax=None, logx=False,
-                     groups=None, cv=None, scoring=None, n_jobs=1,
-                     pre_dispatch="all", **kwargs):
+
+def validation_curve(
+    estimator,
+    X,
+    y,
+    param_name,
+    param_range,
+    ax=None,
+    logx=False,
+    groups=None,
+    cv=None,
+    scoring=None,
+    n_jobs=1,
+    pre_dispatch="all",
+    show=True,
+    markers='-d',
+    **kwargs
+):
     """
     Displays a validation curve for the specified param and values, plotting
     both the train and cross-validated test scores. The validation curve is a
@@ -283,7 +325,7 @@ def validation_curve(model, X, y, param_name, param_range, ax=None, logx=False,
 
     Parameters
     ----------
-    model : a scikit-learn estimator
+    estimator : a scikit-learn estimator
         An object that implements ``fit`` and ``predict``, can be a
         classifier, regressor, or clusterer so long as there is also a valid
         associated scoring metric.
@@ -324,7 +366,7 @@ def validation_curve(model, X, y, param_name, param_range, ax=None, logx=False,
           - An iterable yielding train/test splits.
 
         see the scikit-learn
-        `cross-validation guide <http://scikit-learn.org/stable/modules/cross_validation.html>`_
+        `cross-validation guide <https://bit.ly/2MMQAI7>`_
         for more information on the possible strategies that can be used here.
 
     scoring : string, callable or None, optional, default: None
@@ -340,25 +382,50 @@ def validation_curve(model, X, y, param_name, param_range, ax=None, logx=False,
         all). The option can reduce the allocated memory. The string can
         be an expression like '2*n_jobs'.
 
+    show: bool, default: True
+        If True, calls ``show()``, which in turn calls ``plt.show()`` however
+        you cannot call ``plt.savefig`` from this signature, nor
+        ``clear_figure``. If False, simply calls ``finalize()``
+
+    markers : string, default: '-d'
+        Matplotlib style markers for points on the plot points
+        Options: '-,', '-+', '-o', '-*', '-v', '-h', '-d'
+
     kwargs : dict
         Keyword arguments that are passed to the base class and may influence
         the visualization as defined in other Visualizers. These arguments are
-        also passed to the `poof()` method, e.g. can pass a path to save the
+        also passed to the ``show()`` method, e.g. can pass a path to save the
         figure to.
 
     Returns
     -------
-    ax : matplotlib.Axes
-        The axes object that the validation curves were drawn on.
+    visualizer : ValidationCurve
+        The fitted visualizer
     """
 
     # Initialize the visualizer
     oz = ValidationCurve(
-        model, param_name, param_range, ax=ax, logx=logx, groups=groups,
-        cv=cv, scoring=scoring, n_jobs=n_jobs, pre_dispatch=pre_dispatch
+        estimator,
+        param_name,
+        param_range,
+        ax=ax,
+        logx=logx,
+        groups=groups,
+        cv=cv,
+        scoring=scoring,
+        n_jobs=n_jobs,
+        pre_dispatch=pre_dispatch,
+        markers=markers,
     )
 
-    # Fit and poof the visualizer
+    # Fit the visualizer
     oz.fit(X, y)
-    oz.poof(**kwargs)
-    return oz.ax
+
+    # Draw final visualization
+    if show:
+        oz.show(**kwargs)
+    else:
+        oz.finalize()
+
+    # Return the visualizer object
+    return oz

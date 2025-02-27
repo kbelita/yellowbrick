@@ -41,8 +41,15 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import Ridge, RidgeCV, Lasso, LassoCV
 
 REGRESSORS = [
-    SVR, DecisionTreeRegressor, MLPRegressor, LinearRegression,
-    RandomForestRegressor, Ridge, RidgeCV, Lasso, LassoCV,
+    SVR,
+    DecisionTreeRegressor,
+    MLPRegressor,
+    LinearRegression,
+    RandomForestRegressor,
+    Ridge,
+    RidgeCV,
+    Lasso,
+    LassoCV,
 ]
 
 # Import Classifiers
@@ -55,8 +62,13 @@ from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.naive_bayes import MultinomialNB, GaussianNB
 
 CLASSIFIERS = [
-    SVC, DecisionTreeClassifier, MLPClassifier, LogisticRegression,
-    RandomForestClassifier, GradientBoostingClassifier, MultinomialNB,
+    SVC,
+    DecisionTreeClassifier,
+    MLPClassifier,
+    LogisticRegression,
+    RandomForestClassifier,
+    GradientBoostingClassifier,
+    MultinomialNB,
     GaussianNB,
 ]
 
@@ -64,26 +76,26 @@ CLASSIFIERS = [
 from sklearn.cluster import KMeans, MiniBatchKMeans
 from sklearn.cluster import AffinityPropagation, Birch
 
-CLUSTERERS = [
-    KMeans, MiniBatchKMeans, AffinityPropagation, Birch,
-]
+CLUSTERERS = [KMeans, MiniBatchKMeans, AffinityPropagation, Birch]
 
 # Import Decompositions
 from sklearn.decomposition import PCA
 from sklearn.decomposition import TruncatedSVD
 
-DECOMPOSITIONS = [
-    PCA, TruncatedSVD
-]
+DECOMPOSITIONS = [PCA, TruncatedSVD]
 
 # Import Transformers
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.feature_extraction import DictVectorizer
 from sklearn.preprocessing import QuantileTransformer
-from sklearn.preprocessing import StandardScaler, Imputer
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.preprocessing import StandardScaler
+from sklearn.impute import SimpleImputer
 
 TRANSFORMERS = [
-    DictVectorizer, QuantileTransformer, StandardScaler, Imputer,
+    DictVectorizer,
+    QuantileTransformer,
+    StandardScaler,
+    SimpleImputer,
     TfidfVectorizer,
 ]
 
@@ -91,16 +103,12 @@ TRANSFORMERS = [
 from sklearn.pipeline import Pipeline, FeatureUnion
 
 
-PIPELINES = [
-    Pipeline, FeatureUnion,
-]
+PIPELINES = [Pipeline, FeatureUnion]
 
 # Import GridSearch Utilities
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 
-SEARCH = [
-    GridSearchCV, RandomizedSearchCV,
-]
+SEARCH = [GridSearchCV, RandomizedSearchCV]
 
 
 # Other Groups
@@ -118,6 +126,7 @@ def obj_name(obj):
 ##########################################################################
 ## Model type checking test cases
 ##########################################################################
+
 
 class TestModelTypeChecking(object):
     """
@@ -145,9 +154,9 @@ class TestModelTypeChecking(object):
         obj = model()
         assert is_estimator(obj)
 
-    @pytest.mark.parametrize("cls", [
-        list, dict, tuple, set, str, bool, int, float
-    ], ids=obj_name)
+    @pytest.mark.parametrize(
+        "cls", [list, dict, tuple, set, str, bool, int, float], ids=obj_name
+    )
     def test_not_is_estimator(self, cls):
         """
         Assert Python objects are not estimators
@@ -165,10 +174,7 @@ class TestModelTypeChecking(object):
         assert is_estimator(Pipeline)
         assert is_estimator(FeatureUnion)
 
-        model = Pipeline([
-            ('reduce_dim', PCA()),
-            ('linreg', LinearRegression())
-        ])
+        model = Pipeline([("reduce_dim", PCA()), ("linreg", LinearRegression())])
 
         assert is_estimator(model)
 
@@ -179,14 +185,18 @@ class TestModelTypeChecking(object):
         assert is_estimator(GridSearchCV)
         assert is_estimator(RandomizedSearchCV)
 
-        model = GridSearchCV(SVR(), {'kernel': ['linear', 'rbf']})
+        model = GridSearchCV(SVR(), {"kernel": ["linear", "rbf"]})
         assert is_estimator(model)
 
-    @pytest.mark.parametrize("viz,params", [
-        (Visualizer, {}),
-        (ScoreVisualizer, {'model': LinearRegression()}),
-        (ModelVisualizer, {'model': LogisticRegression()})
-    ], ids=lambda i: obj_name(i[0]))
+    @pytest.mark.parametrize(
+        "viz,params",
+        [
+            (Visualizer, {}),
+            (ScoreVisualizer, {"estimator": LinearRegression()}),
+            (ModelVisualizer, {"estimator": LogisticRegression()}),
+        ],
+        ids=["Visualizer", "ScoreVisualizer", "ModelVisualizer"],
+    )
     def test_is_estimator_visualizer(self, viz, params):
         """
         Test that is_estimator works for Visualizers
@@ -218,9 +228,9 @@ class TestModelTypeChecking(object):
         obj = model()
         assert is_regressor(obj)
 
-    @pytest.mark.parametrize("model",
-        CLASSIFIERS+CLUSTERERS+TRANSFORMERS+DECOMPOSITIONS,
-    ids=obj_name)
+    @pytest.mark.parametrize(
+        "model", CLASSIFIERS + CLUSTERERS + TRANSFORMERS + DECOMPOSITIONS, ids=obj_name
+    )
     def test_not_is_regressor(self, model):
         """
         Test that is_regressor does not match non-regressor estimators
@@ -238,10 +248,7 @@ class TestModelTypeChecking(object):
         assert not is_regressor(Pipeline)
         assert not is_regressor(FeatureUnion)
 
-        model = Pipeline([
-            ('reduce_dim', PCA()),
-            ('linreg', LinearRegression())
-        ])
+        model = Pipeline([("reduce_dim", PCA()), ("linreg", LinearRegression())])
 
         assert is_regressor(model)
 
@@ -253,13 +260,17 @@ class TestModelTypeChecking(object):
         assert is_regressor(GridSearchCV)
         assert is_regressor(RandomizedSearchCV)
 
-        model = GridSearchCV(SVR(), {'kernel': ['linear', 'rbf']})
+        model = GridSearchCV(SVR(), {"kernel": ["linear", "rbf"]})
         assert is_regressor(model)
 
-    @pytest.mark.parametrize("viz,params", [
-        (ScoreVisualizer, {'model': LinearRegression()}),
-        (ModelVisualizer, {'model': Ridge()})
-    ], ids=lambda i: obj_name(i[0]))
+    @pytest.mark.parametrize(
+        "viz,params",
+        [
+            (ScoreVisualizer, {"estimator": LinearRegression()}),
+            (ModelVisualizer, {"estimator": Ridge()}),
+        ],
+        ids=["ScoreVisualizer", "ModelVisualizer"],
+    )
     def test_is_regressor_visualizer(self, viz, params):
         """
         Test that is_regressor works on visualizers
@@ -291,9 +302,9 @@ class TestModelTypeChecking(object):
         obj = model()
         assert is_classifier(obj)
 
-    @pytest.mark.parametrize("model",
-        REGRESSORS+CLUSTERERS+TRANSFORMERS+DECOMPOSITIONS,
-    ids=obj_name)
+    @pytest.mark.parametrize(
+        "model", REGRESSORS + CLUSTERERS + TRANSFORMERS + DECOMPOSITIONS, ids=obj_name
+    )
     def test_not_is_classifier(self, model):
         """
         Test that is_classifier does not match non-classifier estimators
@@ -311,10 +322,7 @@ class TestModelTypeChecking(object):
         assert not is_classifier(Pipeline)
         assert not is_classifier(FeatureUnion)
 
-        model = Pipeline([
-            ('reduce_dim', PCA()),
-            ('linreg', LogisticRegression())
-        ])
+        model = Pipeline([("reduce_dim", PCA()), ("linreg", LogisticRegression())])
 
         assert is_classifier(model)
 
@@ -326,13 +334,17 @@ class TestModelTypeChecking(object):
         assert is_classifier(GridSearchCV)
         assert is_classifier(RandomizedSearchCV)
 
-        model = GridSearchCV(SVC(), {'kernel': ['linear', 'rbf']})
+        model = GridSearchCV(SVC(), {"kernel": ["linear", "rbf"]})
         assert is_classifier(model)
 
-    @pytest.mark.parametrize("viz,params", [
-        (ScoreVisualizer, {'model': MultinomialNB()}),
-        (ModelVisualizer, {'model': MLPClassifier()})
-    ], ids=lambda i: obj_name(i[0]))
+    @pytest.mark.parametrize(
+        "viz,params",
+        [
+            (ScoreVisualizer, {"estimator": MultinomialNB()}),
+            (ModelVisualizer, {"estimator": MLPClassifier()}),
+        ],
+        ids=["ScoreVisualizer", "ModelVisualizer"],
+    )
     def test_is_classifier_visualizer(self, viz, params):
         """
         Test that is_classifier works on visualizers
@@ -364,9 +376,9 @@ class TestModelTypeChecking(object):
         obj = model()
         assert is_clusterer(obj)
 
-    @pytest.mark.parametrize("model",
-        REGRESSORS+CLASSIFIERS+TRANSFORMERS+DECOMPOSITIONS,
-    ids=obj_name)
+    @pytest.mark.parametrize(
+        "model", REGRESSORS + CLASSIFIERS + TRANSFORMERS + DECOMPOSITIONS, ids=obj_name
+    )
     def test_not_is_clusterer(self, model):
         """
         Test that is_clusterer does not match non-clusterer estimators
@@ -384,16 +396,15 @@ class TestModelTypeChecking(object):
         assert not is_clusterer(Pipeline)
         assert not is_clusterer(FeatureUnion)
 
-        model = Pipeline([
-            ('reduce_dim', PCA()),
-            ('kmeans', KMeans())
-        ])
+        model = Pipeline([("reduce_dim", PCA()), ("kmeans", KMeans())])
 
         assert is_clusterer(model)
 
-    @pytest.mark.parametrize("viz,params", [
-        (ModelVisualizer, {'model': KMeans()})
-    ], ids=lambda i: obj_name(i[0]))
+    @pytest.mark.parametrize(
+        "viz,params", [
+            (ModelVisualizer, {"estimator": KMeans()})
+        ], ids=["ModelVisualizer"]
+    )
     def test_is_clusterer_visualizer(self, viz, params):
         """
         Test that is_clusterer works on visualizers
@@ -425,8 +436,9 @@ class TestModelTypeChecking(object):
         obj = model(SVC, {"C": [0.5, 1, 10]})
         assert is_gridsearch(obj)
 
-    @pytest.mark.parametrize("model",
-        [MLPRegressor, MLPClassifier, Imputer], ids=obj_name)
+    @pytest.mark.parametrize(
+        "model", [MLPRegressor, MLPClassifier, SimpleImputer], ids=obj_name
+    )
     def test_not_is_gridsearch(self, model):
         """
         Test that is_gridsearch does not match non grid searches
@@ -447,10 +459,19 @@ class TestModelTypeChecking(object):
         """
         assert isprobabilistic is is_probabilistic
 
-    @pytest.mark.parametrize("model", [
-        MultinomialNB, GaussianNB, LogisticRegression, SVC,
-        RandomForestClassifier, GradientBoostingClassifier, MLPClassifier,
-    ], ids=obj_name)
+    @pytest.mark.parametrize(
+        "model",
+        [
+            MultinomialNB,
+            GaussianNB,
+            LogisticRegression,
+            SVC,
+            RandomForestClassifier,
+            GradientBoostingClassifier,
+            MLPClassifier,
+        ],
+        ids=obj_name,
+    )
     def test_is_probabilistic(self, model):
         """
         Test that is_probabilistic works correctly
@@ -461,10 +482,11 @@ class TestModelTypeChecking(object):
         obj = model()
         assert is_probabilistic(obj)
 
-    @pytest.mark.parametrize("model", [
-        MLPRegressor, Imputer, StandardScaler, KMeans,
-        RandomForestRegressor,
-    ], ids=obj_name)
+    @pytest.mark.parametrize(
+        "model",
+        [MLPRegressor, SimpleImputer, StandardScaler, KMeans, RandomForestRegressor],
+        ids=obj_name,
+    )
     def test_not_is_probabilistic(self, model):
         """
         Test that is_probabilistic does not match non probablistic estimators
@@ -479,6 +501,7 @@ class TestModelTypeChecking(object):
 ##########################################################################
 ## Data type checking test cases
 ##########################################################################
+
 
 class TestDataTypeChecking(object):
     """
@@ -500,27 +523,66 @@ class TestDataTypeChecking(object):
         """
         Test that is_dataframe works correctly
         """
-        df = pd.DataFrame([
-            {'a': 1, 'b': 2.3, 'c': 'Hello'},
-            {'a': 2, 'b': 3.14, 'c': 'World'},
-        ])
+        df = pd.DataFrame(
+            [{"a": 1, "b": 2.3, "c": "Hello"}, {"a": 2, "b": 3.14, "c": "World"}]
+        )
 
         assert is_dataframe(df)
 
-    @pytest.mark.parametrize("obj", [
-        np.array([
-            (1,2.,'Hello'), (2,3.,"World")],
-            dtype=[('foo', 'i4'),('bar', 'f4'), ('baz', 'S10')]
-        ),
-        np.array([[1,2,3], [1,2,3]]),
-        [[1,2,3], [1,2,3]],
-    ],
-    ids=["structured array", "array", "list"])
+    @pytest.mark.parametrize(
+        "obj",
+        [
+            np.array(
+                [(1, 2.0, "Hello"), (2, 3.0, "World")],
+                dtype=[("foo", "i4"), ("bar", "f4"), ("baz", "S10")],
+            ),
+            np.array([[1, 2, 3], [1, 2, 3]]),
+            [[1, 2, 3], [1, 2, 3]],
+        ],
+        ids=["structured array", "array", "list"],
+    )
     def test_not_is_dataframe(self, obj):
         """
         Test that is_dataframe does not match non-dataframes
         """
         assert not is_dataframe(obj)
+
+    ##////////////////////////////////////////////////////////////////////
+    ## is_series testing
+    ##////////////////////////////////////////////////////////////////////
+
+    def test_series_alias(self):
+        """
+        Assert isseries aliases is_series
+        """
+        assert isseries is is_series
+
+    @pytest.mark.skipif(pd is None, reason="requires pandas")
+    def test_is_series(self):
+        """
+        Test that is_series works correctly
+        """
+        df = pd.Series([1, 2, 3])
+
+        assert is_series(df)
+
+    @pytest.mark.parametrize(
+        "obj",
+        [
+            np.array(
+                [(1, 2.0, "Hello"), (2, 3.0, "World")],
+                dtype=[("foo", "i4"), ("bar", "f4"), ("baz", "S10")],
+            ),
+            np.array([1, 2, 3]),
+            [1, 2, 3],
+        ],
+        ids=["structured array", "array", "list"],
+    )
+    def test_not_is_series(self, obj):
+        """
+        Test that is_series does not match non-dataframes
+        """
+        assert not is_series(obj)
 
     ##////////////////////////////////////////////////////////////////////
     ## is_structured_array testing
@@ -536,18 +598,16 @@ class TestDataTypeChecking(object):
         """
         Test that is_structured_array works correctly
         """
-        x = np.array([
-            (1,2.,'Hello'), (2,3.,"World")],
-            dtype=[('foo', 'i4'),('bar', 'f4'), ('baz', 'S10')]
+        x = np.array(
+            [(1, 2.0, "Hello"), (2, 3.0, "World")],
+            dtype=[("foo", "i4"), ("bar", "f4"), ("baz", "S10")],
         )
 
         assert is_structured_array(x)
 
-    @pytest.mark.parametrize("obj", [
-        np.array([[1,2,3], [1,2,3]]),
-        [[1,2,3], [1,2,3]],
-    ],
-    ids=obj_name)
+    @pytest.mark.parametrize(
+        "obj", [np.array([[1, 2, 3], [1, 2, 3]]), [[1, 2, 3], [1, 2, 3]]], ids=obj_name
+    )
     def test_not_is_structured_array(self, obj):
         """
         Test that is_structured_array does not match non-structured-arrays

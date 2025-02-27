@@ -1,10 +1,10 @@
 # yellowbrick.utils.wrapper
 # Utility package that provides a wrapper for new style classes.
 #
-# Author:   Benjamin Bengfort <bbengfort@districtdatalabs.com>
+# Author:   Benjamin Bengfort
 # Created:  Sun May 21 20:27:32 2017 -0700
 #
-# Copyright (C) 2017 District Data Labs
+# Copyright (C) 2017 The sckit-yb developers
 # For license information, see LICENSE.txt
 #
 # ID: wrapper.py [b2ecd50] benjamin@bengfort.com $
@@ -16,6 +16,8 @@ Utility package that provides a wrapper for new style classes.
 ##########################################################################
 ## Wrapper Class
 ##########################################################################
+
+from yellowbrick.exceptions import YellowbrickAttributeError, YellowbrickTypeError
 
 
 class Wrapper(object):
@@ -38,5 +40,11 @@ class Wrapper(object):
         self._wrapped = obj
 
     def __getattr__(self, attr):
+        if self is self._wrapped:
+            raise YellowbrickTypeError("wrapper cannot wrap itself or recursion will occur")
+
         # proxy to the wrapped object
-        return getattr(self._wrapped, attr)
+        try:
+            return getattr(self._wrapped, attr)
+        except AttributeError as e:
+            raise YellowbrickAttributeError(f"neither visualizer '{self.__class__.__name__}' nor wrapped estimator '{type(self._wrapped).__name__}' have attribute '{attr}'") from e
